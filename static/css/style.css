@@ -1,0 +1,13 @@
+/* Custom styles for Job Portal BD */
+.job-card:hover {
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+}
+
+.navbar {
+    transition: background-color 0.3s ease;
+}
+
+.navbar.scrolled {
+    background-color: #1e3a8a;
+}

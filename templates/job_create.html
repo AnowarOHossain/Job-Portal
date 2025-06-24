@@ -1,0 +1,70 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script>{% extends 'base.html' %}
+{% block title %}Post a Job{% endblock %}
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-blue-900 mb-4">Post a New Job</h1>
+    <form action="{% url 'job_create' %}" method="POST" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            <label for="title" class="block text-gray-700">Job Title</label>
+            <input type="text" name="title" id="title" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900" required>
+        </div>
+        <div>
+            <label for="company" class="block text-gray-700">Company</label>
+            <input type="text" name="company" id="company" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900" required>
+        </div>
+        <div>
+            <label for="location" class="block text-gray-700">Location</label>
+            <input type="text" name="location" id="location" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900" required>
+        </div>
+        <div>
+            <label for="salary" class="block text-gray-700">Salary (Optional)</label>
+            <input type="text" name="salary" id="salary" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900">
+        </div>
+        <div>
+            <label for="description" class="block text-gray-700">Description</label>
+            <textarea name="description" id="description" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900" rows="6" required></textarea>
+        </div>
+        <button type="submit" class="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-700">Post Job</button>
+    </form>
+</div>
+{% endblock %}
